@@ -150,6 +150,9 @@ resource "proxmox_virtual_environment_vm" "vm" {
 
  */
 resource "proxmox_virtual_environment_vm" "persistent_disk" {
+  // Only provision the persistent disks VM if there are persistent disks
+  count = length(var.persistent_disks) > 0 ? 1 : 0
+
   name        = "${var.vm_name}-disks"
   description = "Persistent data disk for VM ${var.vm_id} '${var.vm_name}' - DO NOT DELETE"
   node_name   = var.node_name

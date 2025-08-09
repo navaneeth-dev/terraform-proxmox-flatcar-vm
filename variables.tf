@@ -53,6 +53,16 @@ variable "storage_root" {
   default     = "local"
 }
 
+/*
+  Provide support to the module to map a storage name to a local path on the
+  Proxmox nodes filesystem. This is only suitable for storage types that map to
+  the local filesystem on the node.
+
+  This mapping is required, because the 'compiled' ignition provided to QEMU via
+  the `fw_cfg` command line argument needs a local filesystem path. This workaround
+  could be implemented by the bpg/proxmox provider as a 'data' resource in a later
+  implementation.
+*/
 variable storage_path_mapping {
   description = "Mapping of storage name to a local path (this is to support local path name construction)"
   type = map(string)

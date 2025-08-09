@@ -1,0 +1,33 @@
+#
+#
+# see
+#   - https://coreos.github.io/butane/config-flatcar-v1_1/
+#   - https://coreos.github.io/butane/config-flatcar-v1_0/
+#   - https://coreos.github.io/butane/
+#
+version: 1.1.0 # (which maps to ignition v3.4.0)
+variant: flatcar
+
+passwd:
+  users:
+    - name: core
+      ssh_authorized_keys:
+        - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFkyaM9D4TtCOSdIR8JvH5DCt0UHbfPGx7VlSJrP593N me-ed25519
+
+storage:
+  files:
+    - path: /etc/hostname
+      mode: 0644
+      contents:
+        inline: ${vm_name}
+
+    # Locks down the ssh daemon.
+    #
+    # see:
+    #  - https://www.flatcar.org/docs/latest/setup/security/customizing-sshd/
+    - path: /etc/ssh/sshd_config
+      overwrite: true
+      mode: 0600
+      contents:
+        local: sshd_config
+
