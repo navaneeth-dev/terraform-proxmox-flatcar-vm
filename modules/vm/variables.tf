@@ -94,7 +94,7 @@ variable memory {
 
 
 variable disks {
-  description = "An optional list additional disks"
+  description = "An optional list additional disks (these will be deleted with the VM when reprovisioned)"
   type = list(object({
     datastore_id = string
     //  interface    = string

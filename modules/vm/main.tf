@@ -79,8 +79,13 @@ resource "proxmox_virtual_environment_vm" "vm" {
 
   // Reference each of the disks in the persistent storage VM that is created
   // as a place to hold and managed the disks.
+  //
+  // Only provision those disks if there are some provisded (otherwise the
+  // whole VM will not be present).
   dynamic "disk" {
-    for_each = {for idx, d in proxmox_virtual_environment_vm.persistent_disk.disk : idx => d}
+    for_each = length(var.persistent_disks) > 0 ? {
+      for idx, d in proxmox_virtual_environment_vm.persistent_disk[0].disk : idx => d
+    } : {}
     iterator = disk
 
     content {
@@ -126,7 +131,6 @@ resource "proxmox_virtual_environment_vm" "vm" {
     // see: https://developer.hashicorp.com/terraform/language/meta-arguments/lifecycle#replace_triggered_by
     replace_triggered_by = [
       proxmox_virtual_environment_file.flatcar_butane,
-      proxmox_virtual_environment_vm.persistent_disk,
       null_resource.disk_length_trigger
     ]
   }
@@ -253,9 +257,12 @@ data "butane_config" "butane" {
 /**
     Setup a trigger for when the number of disks changes, so that the
     VM is reprovisioned.
+
+    By reprovisioning the disks, the Butane/Ignition will be rerun.
  */
 resource "null_resource" "disk_length_trigger" {
   triggers = {
     disk_count = length(var.disks)
+    disks_serialized = jsonencode(var.persistent_disks)
   }
 }
