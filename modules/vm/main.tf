@@ -50,52 +50,29 @@ resource "proxmox_virtual_environment_vm" "vm" {
   }
   scsi_hardware = "virtio-scsi-single"
 
-  # Boot disk (Flatcar)
-  disk {
-    datastore_id = var.storage_root
-    interface    = "virtio0"
-    iothread     = true
-    discard      = "on"
-    size         = 10
-    import_from  = var.flatcar_image_id
-    backup       = false
-  }
-
-  // Create additional (lifecycle not fixed) disks
-  dynamic "disk" {
-    for_each = {for idx, d in var.disks : idx => d}
-    iterator = disk
-
-    content {
-      interface = "virtio${disk.key + 1}" // '0' is used by the boot disk (above)
-      datastore_id = disk.value.datastore_id
-      file_format = disk.value.file_format
-      size        = disk.value.size
-      iothread    = disk.value.iothread
-      discard     = disk.value.discard
-    }
-  }
-
-
-  // Reference each of the disks in the persistent storage VM that is created
-  // as a place to hold and managed the disks.
+  // Create the VM disks from an ordered list of disks. They aren't created in the various
+  // blocked, otherwise the ordering will be lost in the state file, then when the configuration
+  // is reapplied, there are inconsistencies due to the reordering.  The local variables below
+  // will construct the ordered sets of disks into a list so they are applied here in one block.
   //
-  // Only provision those disks if there are some provisded (otherwise the
-  // whole VM will not be present).
+  // The order of the disks is:
+  //   virtio0 is the Flatcar OS disk
+  //   virtio1..N are additional disks for the VM that will be deleted when the VM is reprovisioned
+  //   virtioN+1...M are persistent disks from the secondary VM
   dynamic "disk" {
-    for_each = length(var.persistent_disks) > 0 ? {
-      for idx, d in proxmox_virtual_environment_vm.persistent_disk[0].disk : idx => d
-    } : {}
+    for_each = local.ordered_disks
     iterator = disk
 
     content {
-      interface = "virtio${disk.key + 1 + length(var.disks)}" // skip the boot disk and the additional disks (above)
-      datastore_id      = disk.value["datastore_id"]
-      path_in_datastore = disk.value["path_in_datastore"]
-      file_format       = disk.value["file_format"]
-      size              = disk.value["size"]
-      iothread          = disk.value["iothread"]
-      discard           = disk.value["discard"]
+      interface         = disk.value.interface
+      datastore_id      = disk.value.datastore_id
+      size              = try(disk.value.size, null)
+      file_format       = try(disk.value.file_format, null)
+      iothread          = try(disk.value.iothread, null)
+      discard           = try(disk.value.discard, null)
+      import_from       = try(disk.value.import_from, null)
+      backup            = try(disk.value.backup, null)
+      path_in_datastore = try(disk.value.path_in_datastore, null)
     }
   }
 
@@ -135,6 +112,55 @@ resource "proxmox_virtual_environment_vm" "vm" {
     ]
   }
 }
+
+locals {
+
+  # Boot disk (always first)
+  boot_disk = [
+    {
+      interface    = "virtio0"
+      datastore_id = var.storage_root
+      iothread     = true
+      discard      = "on"
+      size         = 10
+      import_from  = var.flatcar_image_id
+      backup       = false
+    }
+  ]
+
+  // Add the additional (lifecycle not fixed) non-persistent disks (second)
+  //
+  // Take the configuration provided and merge it with a fixed interface name
+  disks = [
+    for idx, disk in var.disks : merge(
+      disk,
+      {
+        interface = "virtio${1 + idx}" # skip virtio0 used by boot disk above
+      }
+    )
+  ]
+
+  // Reference each of the disks in the persistent storage VM that is created
+  // as a place to hold and managed the disks.
+  //
+  // Only provision those disks if there are some provisioned (otherwise the
+  // whole VM will not be present).
+  persistent_disks = length(proxmox_virtual_environment_vm.persistent_disk) > 0 ? [
+    for idx, disk in proxmox_virtual_environment_vm.persistent_disk[0].disk : {
+      interface         = "virtio${1 + length(var.disks) + idx}"
+      datastore_id      = disk["datastore_id"]
+      path_in_datastore = disk["path_in_datastore"]
+      file_format       = disk["file_format"]
+      size              = disk["size"]
+      iothread          = disk["iothread"]
+      discard           = disk["discard"]
+    }
+  ] : []
+
+  # Merge all into one ordered list
+  ordered_disks = concat(local.boot_disk, local.disks, local.persistent_disks)
+}
+
 
 /**
     Create a VM for the purpose of holding disks that are never deleted (persistent data).
