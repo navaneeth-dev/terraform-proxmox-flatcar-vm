@@ -193,3 +193,10 @@ variable network_devices {
   }))
   default = []
 }
+
+
+variable image_transfer_timeout {
+  description = "How long to wait for images to transfer (download from the internet to Proxmox)"
+  type = number
+  default = 600 /* seconds, aka 10 minutes */
+}

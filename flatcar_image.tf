@@ -1,7 +1,9 @@
 locals {
   // see: https://stable.release.flatcar-linux.net/amd64-usr/4230.2.1/
   FLATCAR_BASE_IMAGE_URL      = "https://${var.flatcar_channel}.release.flatcar-linux.net/${var.flatcar_architecture}-usr/${var.flatcar_version}"
-  FLATCAR_OS_IMAGE_URL        = "${local.FLATCAR_BASE_IMAGE_URL}/flatcar_production_qemu_uefi_image.img"
+  FLATCAR_OS_IMAGE_FILENAME   = "flatcar_production_qemu_uefi_image.img"
+  FLATCAR_OS_IMAGE_URL        = "${local.FLATCAR_BASE_IMAGE_URL}/${local.FLATCAR_OS_IMAGE_FILENAME}"
+  FLATCAR_OS_IMAGE_DIGEST_URL = "${local.FLATCAR_BASE_IMAGE_URL}/${local.FLATCAR_OS_IMAGE_FILENAME}.DIGESTS"
   FLATCAR_UEFI_VARS_IMAGE_URL = "${local.FLATCAR_BASE_IMAGE_URL}/flatcar_production_qemu_uefi_efi_vars.qcow2"
   FLATCAR_UEFI_CODE_IMAGE_URL = "${local.FLATCAR_BASE_IMAGE_URL}/flatcar_production_qemu_uefi_secure_efi_code.qcow2"
   FLATCAR_BASE_FILENAME       = "flatcar-${var.flatcar_architecture}-${var.flatcar_channel}-${var.flatcar_version}"
@@ -56,9 +58,22 @@ resource "proxmox_virtual_environment_download_file" "flatcar_image" {
   node_name           = var.node_name
   url                 = local.FLATCAR_OS_IMAGE_URL
   file_name           = "${local.FLATCAR_BASE_FILENAME}-image.qcow2"
+  overwrite           = false
   overwrite_unmanaged = true
+  checksum_algorithm  = "sha512"
+  checksum            = module.flatcar_image_digest.digest
+  upload_timeout      = var.image_transfer_timeout
 }
 
+/*
+  Using the flatcar '.DIGEST' file, get the sha512 digest for the OS image
+*/
+module "flatcar_image_digest" {
+  source    = "./modules/digest"
+  url       = local.FLATCAR_OS_IMAGE_DIGEST_URL
+  filename  = local.FLATCAR_OS_IMAGE_FILENAME
+  algorithm = "SHA512"
+}
 
 resource "proxmox_virtual_environment_download_file" "flatcar_uefi_vars" {
   count = 0 // disable for now, as UEFI vars are not able to be provisioned
