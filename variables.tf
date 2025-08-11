@@ -140,8 +140,7 @@ variable disks {
   description = "An optional list of disk parameters"
   type = list(object({
     datastore_id = string
-    //  interface    = string
-    size = number
+    size = number # the size of the disk in gigabytes
     cache = optional(string, "none")
     iothread = optional(bool, false)
     backup = optional(bool, true)
@@ -194,9 +193,29 @@ variable network_devices {
   default = []
 }
 
+// The BPG Proxmox provider and modern Flatcar Container Linux both support
+// a virtiofs filesystem. This is an upgrade over planfs support.
+//
+// The BPG Proxmox provider doesn't support provisioning these directory
+// mappings at this point in time, so a manual step is required to do this
+// on the node in the "Directory Mappings" section for the *Data Center*.
+//
+// see:
+//  - https://registry.terraform.io/providers/bpg/proxmox/latest/docs/resources/virtual_environment_vm#virtiofs-1
+variable directories {
+  description = "An optional list virtiofs directory mappings"
+  type = list(object({
+    name = string
+    cache = optional(string, "never") // "auto", "always", "never", "metadata"
+    direct_io = optional(bool, false)
+    expose_acl = optional(bool, false)
+    expose_xattr = optional(bool, false)
+  }))
+  default = []
+}
 
 variable image_transfer_timeout {
   description = "How long to wait for images to transfer (download from the internet to Proxmox)"
-  type = number
-  default = 600 /* seconds, aka 10 minutes */
+  type        = number
+  default     = 600 /* seconds, aka 10 minutes */
 }

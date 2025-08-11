@@ -33,10 +33,11 @@ module "vm" {
       queues  = var.cpu.cores < 8 ? var.cpu.cores : 8
     }
   ]
+  directories = var.directories
 
-  butane_conf          = var.butane_conf
-  butane_snippet_path  = var.butane_snippet_path
-  butane_variables     = var.butane_variables
+  butane_conf         = var.butane_conf
+  butane_snippet_path = var.butane_snippet_path
+  butane_variables    = var.butane_variables
 
   storage_root         = var.storage_root
   storage_path_mapping = var.storage_path_mapping

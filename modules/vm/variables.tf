@@ -137,3 +137,13 @@ variable network_devices {
     firewall = optional(bool, false)
   }))
 }
+
+variable directories {
+  type = list(object({
+    name = string # the name of the directory mapping
+    cache = optional(string, "never") // "auto", "always", "never", "metadata"
+    direct_io = optional(bool, false)
+    expose_acl = optional(bool, false)
+    expose_xattr = optional(bool, false)
+  }))
+}

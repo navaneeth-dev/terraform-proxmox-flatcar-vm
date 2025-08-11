@@ -94,6 +94,19 @@ resource "proxmox_virtual_environment_vm" "vm" {
     }
   }
 
+  dynamic "virtiofs" {
+    for_each = var.directories
+    iterator = map
+
+    content {
+      mapping = map.value.name
+      cache = map.value.cache
+      direct_io = map.value.direct_io
+      expose_acl = map.value.expose_acl
+      expose_xattr = map.value.expose_xattr
+    }
+  }
+
   // Directly set the KVM/Qemu firmware configuration. Don't use cloud-init, provide
   // the butane via Qemu firmware configuration as a file in a snippet.
   //
