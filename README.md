@@ -1,6 +1,7 @@
 # Terraform BPG/Proxmox Flatcar Linux VM Module
 
-Use the BPG/Proxmox provider to create a Flatcar Container Linux VM. This module will download 
+Use the BPG/Proxmox provider to create a Flatcar Container Linux VM. This 
+[module](https://registry.terraform.io/modules/lucidsolns/flatcar-vm/proxmox/latest) will download 
 the Flatcar Image and provision one (or more) virtual machines with a Butane/Ignition
 configuration.
 
@@ -41,5 +42,6 @@ ssh_username = "user"
 
 ## Terraform Modules
 
+- https://registry.terraform.io/modules/lucidsolns/flatcar-vm/proxmox/latest
 - https://developer.hashicorp.com/terraform/registry/modules/publish
 - https://developer.hashicorp.com/terraform/language/modules/develop/structure
