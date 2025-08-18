@@ -9,25 +9,30 @@ variable "node_name" {
 
 variable "tags" {
   description = "The proxmox virtual machine tags"
-  default = []
+  default = ["flatcar"]
   type = list(string)
 }
 
-
 variable "bridge" {
-  description = "The bridge interface to use for a default single network interface configuration"
+  description =<<EOT
+     The bridge interface to use for a default single network interface configuration. If the
+     'network_devices' parameter is provided, then this value is ignored.
+EOT
   default     = "vmbr0"
   type        = string
 }
 
 variable "vlan_id" {
-  description = "The VLAN id to use for a default single network interface configuration"
+  description =<<EOT
+    The VLAN id to use for a default single network interface configuration. If the
+     'network_devices' parameter is provided, then this value is ignored.
+EOT
   default     = null
   type        = number
 }
 
 variable vm_id {
-  description = "The Proxmox integer id of the VM"
+  description = "The Proxmox integer id of the VM. This is ignored if the 'vms' parameter is provided"
   type        = number
   default = 0
   validation {
@@ -37,7 +42,7 @@ variable vm_id {
 }
 
 variable vm_name {
-  description = "The name of the virtual machine"
+  description = "The name of the virtual machine. This should not be provided if 'vms' is provided"
   type        = string
   default = null
   validation {
@@ -49,7 +54,7 @@ variable vm_name {
 variable "vm_description" {
   description = "The description to apply to the Proxmox description (free form)"
   type        = string
-  default     = "A Flatcar Linux VM running on Proxmox"
+  default     = "A Flatcar Container Linux VM running on Proxmox"
   validation {
     condition = var.vms != null || (var.vm_description != null && var.vm_description != "")
     error_message = "Unless 'vms' is provided, the vm_description must be provided"
@@ -116,7 +121,7 @@ variable storage_path_mapping {
   This allows a fleet of VMs to be deployed in one go.
  */
 variable "vm_count" {
-  description = "The number of VM's of the given type"
+  description = "The number of VM's of the given type. This is not used if the 'vms' parameter is provided."
   default     = 1
   type        = number
 }
@@ -125,6 +130,7 @@ variable "butane_conf" {
   description = "The name/path of the butane file used to configure the Flatcar VM upon first boot"
   type        = string
 }
+
 variable "butane_snippet_path" {
   description = "The base path to butane configuration file snippets"
   default     = "config"
@@ -151,9 +157,11 @@ EOT
   default = {}
 }
 
-
 variable flatcar_version {
-  description = "The version of Flatcar Container Linux to provision (this will be upgraded if it is out of date)"
+  description =<<EOT
+    The version of Flatcar Container Linux to provision. The version of Flatcar Container
+    Linux will automatically upgrade if it is out of date.
+EOT
   type        = string
   default     = "4230.2.1"
 }
@@ -243,20 +251,21 @@ variable network_devices {
     enabled = optional(bool, true)
     disconnected = optional(bool, false)
     firewall = optional(bool, false)
-
   }))
   default = []
 }
 
-// The BPG Proxmox provider and modern Flatcar Container Linux both support
-// a virtiofs filesystem. This is an upgrade over planfs support.
-//
-// The BPG Proxmox provider doesn't support provisioning these directory
-// mappings at this point in time, so a manual step is required to do this
-// on the node in the "Directory Mappings" section for the *Data Center*.
-//
-// see:
-//  - https://registry.terraform.io/providers/bpg/proxmox/latest/docs/resources/virtual_environment_vm#virtiofs-1
+/*
+   The BPG Proxmox provider and modern Flatcar Container Linux both support
+   a virtiofs filesystem. This is an upgrade over planfs support.
+
+   The BPG Proxmox provider doesn't support provisioning these directory
+   mappings at this point in time, so a manual step is required to do this
+   on the node in the "Directory Mappings" section for the *Data Center*.
+
+   see:
+    - https://registry.terraform.io/providers/bpg/proxmox/latest/docs/resources/virtual_environment_vm#virtiofs-1
+*/
 variable directories {
   description = "An optional list virtiofs directory mappings"
   type = list(object({
