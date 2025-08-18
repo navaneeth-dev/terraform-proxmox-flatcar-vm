@@ -29,19 +29,60 @@ variable "vlan_id" {
 variable vm_id {
   description = "The Proxmox integer id of the VM"
   type        = number
+  default = 0
+  validation {
+    condition = var.vms != null || var.vm_id > 0
+    error_message = "Unless 'vms' is provided, the vm_name must be provided"
+  }
 }
 
 variable vm_name {
   description = "The name of the virtual machine"
   type        = string
+  default = null
+  validation {
+    condition = var.vms != null || (var.vm_name != null && var.vm_name != "")
+    error_message = "Unless 'vms' is provided, the vm_name must be provided"
+  }
 }
 
 variable "vm_description" {
   description = "The description to apply to the Proxmox description (free form)"
   type        = string
   default     = "A Flatcar Linux VM running on Proxmox"
+  validation {
+    condition = var.vms != null || (var.vm_description != null && var.vm_description != "")
+    error_message = "Unless 'vms' is provided, the vm_description must be provided"
+  }
 }
 
+variable vms {
+  description =<<EOT
+    A set of per vm parameters. When multiple VMs are being
+    provisioned, this provides a way to to specify the vm parameters
+    on a per VM basis.
+
+    This allows a set of butane variables to be specified per VM.
+
+    If this parameter is provided, then it is used in place of:
+       - vm_count
+       - vm_name
+       - vm_description
+       - vm_id
+EOT
+  type = list(object({
+    name = string
+    description = string
+    id = number
+    butane_variables = optional(map(string), {})
+  }))
+  default = null
+
+  validation {
+    condition = var.vms == null || length(var.vms > 0)
+    error_message = "If vms parameter list is provided, vm_count must remain at its default value of 1."
+  }
+}
 
 variable "storage_images" {
   description = "The name of the datastore to use for storing Flatcar images"
@@ -91,7 +132,21 @@ variable "butane_snippet_path" {
 }
 
 variable butane_variables {
-  description = "An optional map of additional variables to pass to the butane templates"
+  description =<<EOT
+    An optional map of additional variables to pass to the butane templates.
+
+    It is important to note that these variables are used by the terraform template
+    prior to being translated by the butane compiler. This the variables are only
+    available and substituted in the main butane file. Included configuration files
+    will not have variables substituted.
+
+    The following variables are automatically injected into the butane to
+    ignition rendering process:
+      - vm_id          [ the Proxmox VM number for the VM ]
+      - vm_name        [ the name of the VM ]
+      - vm_count       [ the total number of VMs being provisioned by the terraform module (normally 1) ]
+      - vm_index       [ the zero based index of the VM being provisioned with the butane ]
+EOT
   type = map(string)
   default = {}
 }
@@ -218,4 +273,10 @@ variable image_transfer_timeout {
   description = "How long to wait for images to transfer (download from the internet to Proxmox)"
   type        = number
   default     = 600 /* seconds, aka 10 minutes */
+}
+
+variable "max_network_queues" {
+  description = "The maximum number of network queues"
+  type = number
+  default = 8
 }

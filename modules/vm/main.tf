@@ -282,12 +282,7 @@ resource "proxmox_virtual_environment_file" "flatcar_butane" {
     - https://www.flatcar.org/docs/latest/provisioning/ignition/specification/
  */
 data "butane_config" "butane" {
-  content = templatefile(var.butane_conf, merge(var.butane_variables, {
-    "vm_id"    = var.vm_id
-    "vm_name"  = var.vm_name
-    "vm_count" = var.vm_count
-    "vm_index" = var.vm_index
-  }))
+  content = templatefile(var.butane_conf, var.butane_variables)
   strict = true
   pretty = true
   files_dir = var.butane_snippet_path

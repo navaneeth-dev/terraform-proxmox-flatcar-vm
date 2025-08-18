@@ -39,10 +39,6 @@ variable storage_path_mapping {
   type = map(string)
 }
 
-variable "vm_count" {
-  default = 1
-  type    = number
-}
 
 variable "vm_index" {
   default = 1
