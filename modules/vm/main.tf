@@ -110,11 +110,22 @@ resource "proxmox_virtual_environment_vm" "vm" {
   // Directly set the KVM/Qemu firmware configuration. Don't use cloud-init, provide
   // the butane via Qemu firmware configuration as a file in a snippet.
   //
-  // WARNING: This is likely to unleash a requirement to provision as a root user.
+  // WARNING: This is has a requirement to provision as a root user. This is mentioned
+  //          in the proxmox bug tracker:
+  //     > we'll never be able to allow arbitrary qemu arguments as non-root user, because
+  //     > with that you could do all sorts of things (e.g. passing through /dev/sda as
+  //     > blockdevice, giving you at least read access to the whole hypervisor)
+  //
+  //  When/if the Proxmox hypervisor exposes direct support for setting fw_cfg values
+  //  from a string or file then the root requirement would be avoided. More importantly
+  //  the path to a file variable, could be mapped by proxmox using a storage path
+  //  rather than a absolute path on a specific Proxmox node.
   //
   // see:
   // - https://github.com/bpg/terraform-provider-proxmox/pull/205
   // - https://www.flatcar.org/docs/latest/provisioning/ignition/specification/
+  // - https://bugzilla.proxmox.com/show_bug.cgi?id=4068
+  // - https://www.qemu.org/docs/master/specs/fw_cfg.html#externally-provided-items
   kvm_arguments = "-fw_cfg name=opt/org.flatcar-linux/config,file=${module.butane_storage_map.path}"
 
   lifecycle {
