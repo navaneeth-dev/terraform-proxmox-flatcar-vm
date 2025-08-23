@@ -84,7 +84,7 @@ EOT
   default = null
 
   validation {
-    condition = var.vms == null || length(var.vms > 0)
+    condition = var.vms == null || length(var.vms) > 0
     error_message = "If vms parameter list is provided, vm_count must remain at its default value of 1."
   }
 }
